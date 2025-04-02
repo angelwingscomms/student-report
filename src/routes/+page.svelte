@@ -1,6 +1,7 @@
 <script>
 	import { studentReports, calculateGrade, getOverallRemark } from '$lib/store.js';
 	import { browser } from '$app/environment';
+    import logo from '$lib/logo.jpg';
 
 	// State for View/Edit mode
 	let viewMode = false; // Start in Edit Mode
@@ -178,14 +179,14 @@
 	{#if activeStudentIndex !== -1 && $studentReports[activeStudentIndex]}
 		{@const student = $studentReports[activeStudentIndex]}
 		<!-- Report Card Structure with Double Border -->
-        <div class="border-2 border-blue-700 p-1"> <!-- Outer border -->
-            <div class="border-2 border-blue-700 p-5 bg-white shadow-lg font-sans"> <!-- Inner border -->
+        <div class="border-4 border-blue-700 p-1"> <!-- Outer border -->
+            <div class="border-4 border-blue-700 p-5 bg-white shadow-lg font-sans"> <!-- Inner border -->
 
                 <!-- Header -->
                 <div class="text-center mb-4">
                     <!-- Placeholder for Logo -->
-                    <div class="inline-block bg-blue-100 p-2 border border-blue-300 mb-2">
-                        <span class="text-blue-800 font-semibold">School Logo</span>
+                    <div class="flex justify-center mb-2">
+                        <img src={logo} alt="School Logo" class="h-20 w-auto"/>
                     </div>
                     <h1 class="text-[13pt] font-bold text-blue-800 uppercase">
                         ANGELWINGS COMPREHENSIVE COLLEGE, MAROKO, PW, KUBWA, ABUJA
