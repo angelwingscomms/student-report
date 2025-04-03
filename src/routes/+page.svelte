@@ -2,6 +2,7 @@
 	import { studentReports, calculateGrade, getOverallRemark } from '$lib/store.js';
 	import { browser } from '$app/environment';
     import logo from '$lib/logo.jpg';
+    import { toPng } from 'html-to-image';
 
 	// State for View/Edit mode
 	let viewMode = false; // Start in Edit Mode
@@ -146,6 +147,27 @@
     function handlePrint() {
         window.print();
     }
+
+    function handleDownloadImage() {
+        const node = document.getElementById('report-card');
+        if (!node) return;
+
+        const fileName = $studentReports[activeStudentIndex]?.fullName 
+            ? `${$studentReports[activeStudentIndex].fullName}-report.png`
+            : 'student-report.png';
+
+        toPng(node)
+            .then((dataUrl) => {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = dataUrl;
+                link.click();
+            })
+            .catch((err) => {
+                console.error('Error generating image:', err);
+                alert('Failed to generate image. Please try again.');
+            });
+    }
 </script>
 
 <div class="container mx-auto p-4 bg-gray-100 min-h-screen" id="page-container">
@@ -177,6 +199,9 @@
 				</button>
                 <button on:click={handlePrint} class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                     Print Report
+                </button>
+                <button on:click={handleDownloadImage} class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                    Download Image
                 </button>
 			{/if}
 		</div>
@@ -244,15 +269,15 @@
                     <!-- Right Side: Performance Summary -->
                     <!-- text-[8pt] applied to parent -->
                     <div class="text-right md:text-left">
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">AVERAGE:</span>
                             <span class="font-bold text-red-600 w-20 text-right md:text-left">{studentAverage.toFixed(1)}</span>
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">GRADE:</span>
                             <span class="font-bold text-red-600 w-20 text-right md:text-left">{studentOverallGrade}</span>
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">CLASS AVERAGE:</span>
                              {#if !viewMode}
                                 <input type="number" step="0.1" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.classAverage} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'classAverage')}/>
@@ -260,7 +285,7 @@
                                 <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.classAverage)}</span>
                              {/if}
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">DAYS PRESENT:</span>
                              {#if !viewMode}
                                 <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysPresent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysPresent')}/>
@@ -268,7 +293,7 @@
                                 <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysPresent)}</span>
                              {/if}
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">DAYS ABSENT:</span>
                              {#if !viewMode}
                                 <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysAbsent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysAbsent')}/>
@@ -276,7 +301,7 @@
                                 <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysAbsent)}</span>
                              {/if}
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">DAYS SCHOOL OPENED:</span>
                              {#if !viewMode}
                                 <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysSchoolOpened} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysSchoolOpened')}/>
@@ -284,7 +309,7 @@
                                 <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysSchoolOpened)}</span>
                              {/if}
                         </div>
-                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">TOTAL PUPILS IN CLASS:</span>
                              {#if !viewMode}
                                 <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.totalPupils} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'totalPupils')}/>
