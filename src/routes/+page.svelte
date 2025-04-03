@@ -143,11 +143,14 @@
          return (value !== null && value !== undefined && value !== '') ? value : placeholder;
      }
 
+    function handlePrint() {
+        window.print();
+    }
 </script>
 
-<div class="container mx-auto p-4 bg-gray-100 min-h-screen">
+<div class="container mx-auto p-4 bg-gray-100 min-h-screen" id="page-container">
 	<!-- Controls: Student Selector, Add/Delete, View/Edit Toggle -->
-    <div class="mb-4 flex flex-wrap justify-between items-center gap-4">
+    <div class="mb-4 flex flex-wrap justify-between items-center gap-4" id="page-controls">
 		<div class="flex items-center gap-2">
 			<label for="studentSelect" class="font-semibold">Select Student:</label>
 			<select id="studentSelect" bind:value={activeStudentId} class="p-2 border rounded bg-white">
@@ -172,6 +175,9 @@
 				<button on:click={deleteCurrentReport} class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
 					Delete Current
 				</button>
+                <button on:click={handlePrint} class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Print Report
+                </button>
 			{/if}
 		</div>
 	</div>
@@ -179,7 +185,7 @@
 	{#if activeStudentIndex !== -1 && $studentReports[activeStudentIndex]}
 		{@const student = $studentReports[activeStudentIndex]}
 		<!-- Report Card Structure with Double Border -->
-        <div class="border-4 border-blue-700 p-1"> <!-- Outer border -->
+        <div class="border-4 border-blue-700 p-1" id="report-card"> <!-- Outer border -->
             <div class="border-4 border-blue-700 p-5 bg-white shadow-lg font-sans"> <!-- Inner border -->
 
                 <!-- Header -->
@@ -401,8 +407,7 @@
                 </div>
 
                 <!-- Psychomotor and Affective Skills -->
-                <!-- Applied text-[9pt] -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4 text-[9pt]">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4 text-[9pt]" id="skills-grid">
                     <!-- Psychomotor Skills -->
                     <div>
                         <h3 class="font-bold text-center bg-blue-200 p-1 mb-1 border border-black text-sm">PSYCHOMOTOR SKILLS+</h3>
@@ -410,10 +415,10 @@
                             <tbody>
                                 {#each Object.entries(student.psychomotor) as [skill, grade]}
                                     <tr>
-                                        <td class="border border-black p-1 font-semibold w-3/5">{skill}</td>
-                                        <td class="border border-black p-1 text-center w-2/5">
+                                        <td class="border border-black p-1 font-semibold w-auto whitespace-nowrap">{skill}</td>
+                                        <td class="border border-black p-1 text-center w-auto">
                                             {#if !viewMode}
-                                                <select class="w-full p-1 border rounded text-[9pt]" value={grade} on:change={(e) => handleSkillChange(e, activeStudentIndex, 'psychomotor', skill)}>
+                                                <select class="p-1 border rounded text-[9pt]" value={grade} on:change={(e) => handleSkillChange(e, activeStudentIndex, 'psychomotor', skill)}>
                                                     {#each gradeOptions as option}
                                                         <option value={option}>{option}</option>
                                                     {/each}
@@ -429,23 +434,23 @@
                     </div>
 
                     <!-- Affective Ability -->
-                     <div>
+                    <div>
                         <h3 class="font-bold text-center bg-blue-200 p-1 mb-1 border border-black text-sm">AFFECTIVE ABILITY</h3>
-                         <table class="w-full border-collapse border border-black">
+                        <table class="w-full border-collapse border border-black">
                             <tbody>
                                 {#each Object.entries(student.affective) as [skill, grade]}
                                     <tr>
-                                        <td class="border border-black p-1 font-semibold w-3/5">{skill}</td>
-                                        <td class="border border-black p-1 text-center w-2/5">
-                                             {#if !viewMode}
-                                                <select class="w-full p-1 border rounded text-[9pt]" value={grade} on:change={(e) => handleSkillChange(e, activeStudentIndex, 'affective', skill)}>
+                                        <td class="border border-black p-1 font-semibold w-auto whitespace-nowrap">{skill}</td>
+                                        <td class="border border-black p-1 text-center w-auto">
+                                            {#if !viewMode}
+                                                <select class="p-1 border rounded text-[9pt]" value={grade} on:change={(e) => handleSkillChange(e, activeStudentIndex, 'affective', skill)}>
                                                     {#each gradeOptions as option}
                                                         <option value={option}>{option}</option>
                                                     {/each}
                                                 </select>
-                                             {:else}
+                                            {:else}
                                                 <span>{displayValue(grade)}</span>
-                                             {/if}
+                                            {/if}
                                         </td>
                                     </tr>
                                 {/each}
@@ -517,4 +522,166 @@
     }
     /* Ensure text aligns similarly in view vs edit */
      td > span { vertical-align: middle; }
+
+    /* Print Specific Styles */
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+            background-color: white;
+        }
+
+        #page-controls,
+        .no-print {
+            display: none !important;
+        }
+
+        #page-container {
+            padding: 0 !important;
+            background-color: white !important;
+            min-height: auto !important;
+        }
+
+        #report-card {
+            border: 4px solid blue !important;
+            box-shadow: none !important;
+            margin: 0;
+            padding: 1cm;
+            width: 100%;
+            height: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: white !important;
+        }
+
+        #report-card input[type="text"],
+        #report-card input[type="number"],
+        #report-card input[type="date"],
+        #report-card select,
+        #report-card textarea {
+            border: none !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            padding: 1px 0 !important;
+            margin: 0 !important;
+            -webkit-appearance: none;
+            appearance: none;
+            color: black !important;
+            width: auto;
+        }
+
+        #report-card .flex-grow,
+        #report-card .w-full {
+            width: auto !important;
+        }
+
+        #report-card .w-10, #report-card .w-12, #report-card .w-20 {
+            width: 3em !important;
+            text-align: center;
+        }
+        #report-card .w-36 { width: 8em !important; }
+        #report-card .w-28 { width: 7em !important; }
+        #report-card .w-48 { width: 12em !important; }
+
+        #report-card * {
+            color: black !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        #report-card .bg-blue-100 {
+            display: none !important;
+        }
+
+        #report-card table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        #report-card th, #report-card td {
+            border: 1px solid #ccc !important;
+            padding: 4px !important;
+        }
+        #report-card thead {
+            background-color: #eee !important;
+        }
+        #report-card tfoot {
+            background-color: #f5f5f5 !important;
+        }
+
+        #report-card tr, #report-card table, #report-card div {
+            page-break-inside: avoid !important;
+        }
+        #report-card h3 {
+            page-break-after: avoid !important;
+        }
+
+        a:link:after, a:visited:after {
+            content: "";
+        }
+
+        /* --- START: Skills Grid Print Styles --- */
+        #skills-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.75cm !important;
+            width: 100% !important;
+        }
+
+        #skills-grid > div > table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: auto;
+        }
+
+        #skills-grid > div > h3 {
+            padding: 2px !important;
+            margin-bottom: 2px !important;
+            font-size: 10pt !important;
+            background-color: #eee !important;
+            border: 1px solid #aaa !important;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #skills-grid > div > table > tbody > tr > td {
+            border: 1px solid #aaa !important;
+            padding: 1px 2px !important;
+            vertical-align: top;
+            font-size: 8pt !important;
+        }
+
+        #skills-grid > div > table > tbody > tr > td:first-child {
+            white-space: normal !important;
+            word-break: break-word;
+        }
+
+        #skills-grid > div > table > tbody > tr > td:last-child {
+            text-align: center !important;
+            width: 2em !important;
+            padding: 1px !important;
+        }
+
+        #skills-grid > div > table > tbody > tr > td:last-child > select,
+        #skills-grid > div > table > tbody > tr > td:last-child > span {
+            padding: 0 !important;
+            margin: 0 auto !important;
+            text-align: center;
+            display: inline-block;
+            min-width: 1.5em;
+            font-size: 8pt !important;
+            vertical-align: middle;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+        }
+
+        #skills-grid,
+        #skills-grid > div {
+            page-break-inside: avoid !important;
+        }
+    }
 </style>
