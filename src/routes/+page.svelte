@@ -148,7 +148,7 @@
         window.print();
     }
 
-    function handleDownloadImage() {
+    async function handleDownloadImage() {
         const node = document.getElementById('report-card');
         if (!node) return;
 
@@ -156,17 +156,32 @@
             ? `${$studentReports[activeStudentIndex].fullName}-report.png`
             : 'student-report.png';
 
-        toPng(node)
-            .then((dataUrl) => {
-                const link = document.createElement('a');
-                link.download = fileName;
-                link.href = dataUrl;
-                link.click();
-            })
-            .catch((err) => {
-                console.error('Error generating image:', err);
-                alert('Failed to generate image. Please try again.');
+        // If in edit mode, temporarily switch to view mode for the capture
+        const wasInEditMode = !viewMode;
+        if (wasInEditMode) {
+            viewMode = true;
+            // Wait for DOM update
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        try {
+            const dataUrl = await toPng(node, {
+                // canvasWidth: 794*90/100,  // A4 width in pixels at 96 DPI
+                canvasHeight: 1123*90/100 // A4 height in pixels at 96 DPI
             });
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Error generating image:', err);
+            alert('Failed to generate image. Please try again.');
+        } finally {
+            // Restore edit mode if we switched
+            if (wasInEditMode) {
+                viewMode = false;
+            }
+        }
     }
 </script>
 
@@ -200,7 +215,10 @@
                 <button on:click={handlePrint} class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                     Print Report
                 </button>
-                <button on:click={handleDownloadImage} class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                <button 
+                    on:click={handleDownloadImage} 
+                    class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+                    title={viewMode ? "Download report image" : "Report will be captured in view mode"}>
                     Download Image
                 </button>
 			{/if}
@@ -210,8 +228,8 @@
 	{#if activeStudentIndex !== -1 && $studentReports[activeStudentIndex]}
 		{@const student = $studentReports[activeStudentIndex]}
 		<!-- Report Card Structure with Double Border -->
-        <div class="border-4 border-blue-700 p-1" id="report-card"> <!-- Outer border -->
-            <div class="border-4 border-blue-700 p-5 bg-white shadow-lg font-sans"> <!-- Inner border -->
+        <div class="w-[1123px] border-4 border-blue-700 p-1" id="report-card"> <!-- Outer border -->
+            <div class="border-4 border-blue-700 bg-white shadow-lg font-sans"> <!-- Inner border -->
 
                 <!-- Header -->
                 <div class="text-center mb-4">
@@ -229,7 +247,7 @@
 
                 <!-- Student Info and Performance Summary -->
                 <!-- Applied text-[8pt] -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 mb-4 text-[8pt]">
+                <div class="px-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 mb-4 text-[8pt] border-blue-700 border-b-4 border-t-4 pt-2 pb-2">
                     <!-- Left Side: Student Details -->
                     <div>
                         <div class="flex mb-1 items-center">
@@ -239,14 +257,6 @@
                             {:else}
                                 <span class="font-semibold pl-1">{displayValue(student.fullName)}</span>
                             {/if}
-                        </div>
-                         <div class="flex mb-1 items-center">
-                            <span class="font-bold w-24 inline-block shrink-0">CLASS:</span>
-                             {#if !viewMode}
-                                <input type="text" class="border-b border-gray-400 flex-grow px-1 text-[8pt]" bind:value={student.class} on:input={(e) => handleGenericInput(e, activeStudentIndex, 'class')}/>
-                             {:else}
-                                <span class="font-semibold pl-1">{displayValue(student.class)}</span>
-                             {/if}
                         </div>
                         <div class="flex mb-1 items-center">
                             <span class="font-bold w-24 inline-block shrink-0">DEPARTMENT:</span>
@@ -264,57 +274,52 @@
                                 <span class="font-semibold pl-1">{displayValue(student.session)}</span>
                              {/if}
                         </div>
-                        <!-- REMOVED D.O.B, GENDER, ADMISSION NO -->
+                        <div class="flex mb-1 items-center">
+                            <span class="font-bold w-24 inline-block shrink-0">GENDER:</span>
+                             {#if !viewMode}
+                                <select class="border-b border-gray-400 px-1 text-[8pt]" bind:value={student.gender} on:change={(e) => handleGenericInput(e, activeStudentIndex, 'gender')}>
+                                    <option value="">Select...</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                             {:else}
+                                <span class="font-semibold pl-1">{displayValue(student.gender)}</span>
+                             {/if}
+                        </div>
                     </div>
                     <!-- Right Side: Performance Summary -->
                     <!-- text-[8pt] applied to parent -->
                     <div class="text-right md:text-left">
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">AVERAGE:</span>
-                            <span class="font-bold text-red-600 w-20 text-right md:text-left">{studentAverage.toFixed(1)}</span>
-                        </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">GRADE:</span>
-                            <span class="font-bold text-red-600 w-20 text-right md:text-left">{studentOverallGrade}</span>
-                        </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">CLASS AVERAGE:</span>
-                             {#if !viewMode}
-                                <input type="number" step="0.1" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.classAverage} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'classAverage')}/>
-                             {:else}
-                                <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.classAverage)}</span>
-                             {/if}
-                        </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">DAYS PRESENT:</span>
-                             {#if !viewMode}
-                                <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysPresent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysPresent')}/>
-                             {:else}
-                                <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysPresent)}</span>
-                             {/if}
-                        </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">DAYS ABSENT:</span>
-                             {#if !viewMode}
-                                <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysAbsent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysAbsent')}/>
-                             {:else}
-                                <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysAbsent)}</span>
-                             {/if}
-                        </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
+                        <div class="flex justify-end md:justify-start mb-1 items-center">
                             <span class="font-bold w-36 inline-block text-left shrink-0">DAYS SCHOOL OPENED:</span>
                              {#if !viewMode}
-                                <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysSchoolOpened} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysSchoolOpened')}/>
+                                <input type="number" class="border-b border-gray-400 w-28 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysSchoolOpened} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysSchoolOpened')}/>
                              {:else}
-                                <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.daysSchoolOpened)}</span>
+                                <span class="font-semibold w-28 text-right md:text-left pl-1">{displayValue(student.daysSchoolOpened)}</span>
                              {/if}
                         </div>
-                        <div class="flex justify-end md:justify-start mb-0.5 items-center">
-                            <span class="font-bold w-36 inline-block text-left shrink-0">TOTAL PUPILS IN CLASS:</span>
+                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                            <span class="font-bold w-36 inline-block text-left shrink-0">DAYS PRESENT:</span>
                              {#if !viewMode}
-                                <input type="number" class="border-b border-gray-400 w-20 px-1 text-right md:text-left text-[8pt]" bind:value={student.totalPupils} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'totalPupils')}/>
+                                <input type="number" class="border-b border-gray-400 w-28 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysPresent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysPresent')}/>
                              {:else}
-                                <span class="font-semibold w-20 text-right md:text-left pl-1">{displayValue(student.totalPupils)}</span>
+                                <span class="font-semibold w-28 text-right md:text-left pl-1">{displayValue(student.daysPresent)}</span>
+                             {/if}
+                        </div>
+                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                            <span class="font-bold w-36 inline-block text-left shrink-0">DAYS ABSENT:</span>
+                             {#if !viewMode}
+                                <input type="number" class="border-b border-gray-400 w-28 px-1 text-right md:text-left text-[8pt]" bind:value={student.daysAbsent} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'daysAbsent')}/>
+                             {:else}
+                                <span class="font-semibold w-28 text-right md:text-left pl-1">{displayValue(student.daysAbsent)}</span>
+                             {/if}
+                        </div>
+                        <div class="flex justify-end md:justify-start mb-1 items-center">
+                            <span class="font-bold w-36 inline-block text-left shrink-0">NUMBER IN CLASS:</span>
+                             {#if !viewMode}
+                                <input type="number" class="border-b border-gray-400 w-28 px-1 text-right md:text-left text-[8pt]" bind:value={student.totalPupils} on:input={(e) => handleNumberInputDirect(e, activeStudentIndex, 'totalPupils')}/>
+                             {:else}
+                                <span class="font-semibold w-28 text-right md:text-left pl-1">{displayValue(student.totalPupils)}</span>
                              {/if}
                         </div>
                     </div>
@@ -322,7 +327,7 @@
 
                 <!-- Cognitive Ability Table -->
                 <!-- Applied text-[9pt] -->
-                <div class="mb-4 overflow-x-auto text-[9pt]">
+                <div class="px-4 mb-4 overflow-x-auto text-[9pt]">
                     <table class="w-full border-collapse border border-black">
                         <thead class="bg-blue-900 text-white font-bold text-center align-middle">
                             <tr>
@@ -427,12 +432,12 @@
                 </div>
 
                 <!-- Grade Details Key -->
-                <div class="text-center font-semibold text-xs mb-4 p-2 bg-gray-200 rounded">
+                <div class="px-4 text-center font-semibold text-xs mb-4 p-2 bg-gray-200 rounded">
                     GRADE DETAILS: A+=90-100; A=80-89; B+=70-79; B=60-69; C=50-59; D=40-49; E=0-39
                 </div>
 
                 <!-- Psychomotor and Affective Skills -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4 text-[9pt]" id="skills-grid">
+                <div class="px-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4 text-[9pt]" id="skills-grid">
                     <!-- Psychomotor Skills -->
                     <div>
                         <h3 class="font-bold text-center bg-blue-200 p-1 mb-1 border border-black text-sm">PSYCHOMOTOR SKILLS+</h3>
@@ -486,7 +491,7 @@
 
                 <!-- Remarks and Resumption -->
                 <!-- Font size defaults to base or inherited, adjust if needed -->
-                <div class="mb-4">
+                <div class="px-4 pt-4 border-blue-700 border-t-4 mb-4">
                     <div class="flex items-start mb-2">
                         <span class="font-bold w-48 inline-block pt-1 shrink-0">CLASS TEACHER'S REMARK:</span>
                         {#if !viewMode}
@@ -506,7 +511,7 @@
                 </div>
 
                 <!-- Signature and Date -->
-                <div class="flex justify-between mt-8">
+                <div class="px-4 pb-4 flex justify-between mt-8">
                     <div>
                         <span class="font-bold">SIGNATURE & STAMP:</span>
                         <span class="inline-block border-b border-black w-48 ml-2 align-bottom"></span>

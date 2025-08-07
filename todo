@@ -1,0 +1,29 @@
+on /, on save click, POST request to /
+    server
+        create(v7()
+
+
+routes
+    /:i
+        page load
+            get(i)
+        page
+            if admin (a) allow editing
+    /:i
+    
+    /
+
+search POST /
+    search_by_vector
+
+# /[i]
+## /+page.server.ts
+r = 
+
+how to check if admin
+if query param s === env var PASSWORD
+a = true
+return {a}
+
+## /+page.svelte
+shows the result page, populates the fields with the values from r
